@@ -8,6 +8,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 class MainActivity : Activity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -33,6 +34,7 @@ class MainActivity : Activity() {
 
         layout.addView(title)
         layout.addView(subtitle)
+
         setContentView(layout)
     }
-}l
+}
