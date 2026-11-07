@@ -7,6 +7,15 @@ android {
     namespace = "uz.alikuryer.app"
     compileSdk = 35
 
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
     defaultConfig {
         applicationId = "uz.alikuryer.app"
         minSdk = 24
