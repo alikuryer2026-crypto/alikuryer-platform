@@ -1,37 +1,51 @@
-name: Deploy Ali Kuryer Website
+name: Validate Ali Kuryer Website
 
 on:
   push:
     branches: [main]
     paths:
       - 'index.html'
+      - 'web/**'
       - '.github/workflows/deploy-web.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: github-pages
-  cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-      - name: Upload website
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Validate HTML and inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          import re
+          p = Path('web/index.html') if Path('web/index.html').exists() else Path('index.html')
+          html = p.read_text(encoding='utf-8')
+          assert '<html' in html and '</html>' in html
+          assert 'Ali Kuryer' in html
+          class Checker(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.ids = set()
+                  self.duplicates = set()
+              def handle_starttag(self, tag, attrs):
+                  for key, val in attrs:
+                      if key == 'id':
+                          if val in self.ids:
+                              self.duplicates.add(val)
+                          self.ids.add(val)
+          checker = Checker()
+          checker.feed(html)
+          assert not checker.duplicates, f'Duplicate IDs: {checker.duplicates}'
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, flags=re.S | re.I)
+          Path('/tmp/alikuryer-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          print(f'Validated {p}: {len(checker.ids)} unique IDs, {len(scripts)} inline scripts')
+          PY
+          node --check /tmp/alikuryer-inline.js
+      - name: Deployment information
+        run: echo "Validation only. Production deployment is managed separately on Render."
