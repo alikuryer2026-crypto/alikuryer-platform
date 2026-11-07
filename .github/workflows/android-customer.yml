@@ -1,0 +1,46 @@
+name: Ali Kuryer Customer Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'customer-react/**'
+      - '.github/workflows/android-customer.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: customer-react
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build React website
+        run: npm run build
+      - name: Generate Capacitor Android project
+        run: npx cap add android
+      - name: Bundle website into Android
+        run: npx cap sync android
+      - name: Build Android debug APK
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AliKuryer-Customer-Android-APK
+          path: customer-react/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
